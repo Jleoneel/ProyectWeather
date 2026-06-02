@@ -1,0 +1,190 @@
+<div class="app-container">
+  <div class="glass-card">
+    <h1 class="title"><i class="fa-solid fa-cloud-sun"></i> Clima Ahora</h1>
+
+    <!-- Formulario de búsqueda -->
+    <form (ngSubmit)="getWeather()" #weatherForm="ngForm">
+      <div class="input-group">
+        <input
+          type="text"
+          name="city"
+          [(ngModel)]="cityName"
+          required
+          #cityInput="ngModel"
+          placeholder=" "
+        />
+        <label>Ciudad</label>
+        <span class="focus-border"></span>
+        <i class="fa-solid fa-city input-icon"></i>
+      </div>
+
+      <div class="input-group">
+        <input
+          type="text"
+          name="country"
+          [(ngModel)]="countryCode"
+          placeholder=" "
+        />
+        <label>Código del país (opcional, ej: MX, AR)</label>
+        <span class="focus-border"></span>
+        <i class="fa-solid fa-globe-americas input-icon"></i>
+      </div>
+
+      <button
+        type="button"
+        (click)="getWeather()"
+        [disabled]="loading"
+        class="search-btn"
+      >
+        <span *ngIf="!loading"
+          ><i class="fa-solid fa-magnifying-glass"></i> Consultar</span
+        >
+        <span *ngIf="loading"
+          ><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</span
+        >
+      </button>
+
+      <button
+        type="button"
+        (click)="getLocationWeather()"
+        [disabled]="locationLoading"
+        class="location-btn"
+      >
+        <span *ngIf="!locationLoading"
+          ><i class="fa-solid fa-location-dot"></i> Usar mi ubicación</span
+        >
+        <span *ngIf="locationLoading"
+          ><i class="fa-solid fa-spinner fa-spin"></i> Detectando...</span
+        >
+      </button>
+    </form>
+
+    <!-- Mensaje de error -->
+    <div *ngIf="errorMessage" class="error-message" @fadeInUp>
+      <i class="fa-solid fa-circle-exclamation"></i> {{ errorMessage }}
+    </div>
+
+    <!-- Skeleton clima actual -->
+    <div *ngIf="loading && !weather" class="weather-card skeleton-card">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-temp"></div>
+      <div class="skeleton-details">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
+
+    <!-- Tarjeta del clima -->
+    <div *ngIf="weather && !loading" class="weather-card" @fadeInUp>
+      <div class="weather-main">
+        <i
+          [class]="getWeatherIcon(weather?.weather[0]?.main) + ' weather-icon'"
+        ></i>
+        <div class="temp">
+          {{ weather?.main?.temp | number: "1.0-0" }}{{ unitSymbol }}
+        </div>
+      </div>
+      <!-- Dentro de weather-card, después de .weather-main -->
+      <div class="unit-toggle">
+        <button
+          type="button"
+          [class.active]="units === 'metric'"
+          (click)="units !== 'metric' && toggleUnits()"
+        >
+          °C
+        </button>
+        <button
+          type="button"
+          [class.active]="units === 'imperial'"
+          (click)="units !== 'imperial' && toggleUnits()"
+        >
+          °F
+        </button>
+      </div>
+      <div class="weather-details">
+        <p class="condition">
+          {{ weather?.weather[0]?.main }} -
+          {{ weather?.weather[0]?.description }}
+        </p>
+        <div class="extra-info">
+          <span>
+            <i class="fa-solid fa-temperature-three-quarters"></i>
+            {{ weather?.main?.temp_min | number: "1.0-0" }}{{ unitSymbol }} /
+            {{ weather?.main?.temp_max | number: "1.0-0" }}{{ unitSymbol }}
+          </span>
+          <span
+            ><i class="fa-solid fa-droplet"></i>
+            {{ weather?.main?.humidity }}%</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton pronóstico -->
+    <div
+      *ngIf="forecastLoading && forecast.length === 0"
+      class="forecast-section skeleton-forecast"
+    >
+      <h3 class="forecast-title">
+        <i class="fa-solid fa-calendar-days"></i> Pronóstico 5 días
+      </h3>
+      <div class="forecast-container">
+        <div
+          *ngFor="let i of [1, 2, 3, 4, 5]"
+          class="forecast-day skeleton-day"
+        >
+          <div class="skeleton-line small"></div>
+          <div class="skeleton-circle"></div>
+          <div class="skeleton-line small"></div>
+          <div class="skeleton-line tiny"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pronóstico 5 días -->
+    <div
+      *ngIf="forecast.length > 0 && !loading"
+      class="forecast-section"
+      @fadeInUp
+    >
+      <h3 class="forecast-title">
+        <i class="fa-solid fa-calendar-days"></i> Pronóstico 5 días
+      </h3>
+      <div class="forecast-container">
+        <div *ngFor="let day of forecast" class="forecast-day">
+          <span class="day-name">{{ day.date | date: "EEE" }}</span>
+          <i [class]="getWeatherIcon(day.icon) + ' forecast-icon'"></i>
+          <span class="day-desc">{{ day.description }}</span>
+          <span class="day-temp">
+            {{ day.temp_max | number: "1.0-0" }}{{ unitSymbol }} /
+            {{ day.temp_min | number: "1.0-0" }}{{ unitSymbol }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div *ngIf="searchHistory.length > 0" class="history-section">
+      <div class="history-header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial</h3>
+        <button type="button" (click)="clearHistory()" class="clear-btn">
+          <i class="fa-solid fa-trash-can"></i> Limpiar
+        </button>
+      </div>
+      <ul class="history-list">
+        <li
+          *ngFor="let item of searchHistory"
+          (click)="selectFromHistory(item)"
+        >
+          <span class="city-name">{{ item.city }}</span>
+          <span class="country-code" *ngIf="item.country"
+            >({{ item.country }})</span
+          >
+          <span class="timestamp">{{
+            item.timestamp | date: "shortTime"
+          }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

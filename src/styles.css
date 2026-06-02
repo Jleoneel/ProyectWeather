@@ -1,0 +1,13 @@
+:root {
+  --bg-start: #0B3D5C;
+  --bg-end: #38BDF8;
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --text-dark: #0A2540;
+  --text-light: #D9E9F2;
+  --primary: #FF8A65;
+  --primary-hover: #FF7043;
+  --error-bg: rgba(255, 205, 180, 0.85);
+  --error-border: #FF8A65;
+  --error-text: #B93A1E;
+}
